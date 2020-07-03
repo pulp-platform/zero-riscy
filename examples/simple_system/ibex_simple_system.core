@@ -23,6 +23,11 @@ filesets:
 
 
 parameters:
+  RV_TRACE:
+    datatype: bool
+    paramtype: vlogdefine
+    description: "RISC-V trace interface implementation"
+
   RV32M:
     datatype: int
     paramtype: vlogparam
@@ -103,6 +108,7 @@ targets:
       - PMPGranularity
       - PMPNumRegions
       - SRAM_INIT_FILE
+      - RV_TRACE
     tools:
       vcs:
         vcs_options:

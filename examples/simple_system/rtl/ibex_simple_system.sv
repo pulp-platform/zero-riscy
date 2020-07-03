@@ -192,6 +192,15 @@ module ibex_simple_system (
 
       .debug_req_i           ('b0),
 
+`ifdef RV_TRACE
+      .rv_trace_itype        (),
+      .rv_trace_iaddr        (),
+      .rv_trace_cause        (),
+      .rv_trace_tval         (),
+      .rv_trace_priv         (),
+      .rv_trace_iretire      (),
+`endif
+
       .fetch_enable_i        ('b1),
       .core_sleep_o          ()
     );

@@ -61,6 +61,11 @@ parameters:
     datatype: bool
     paramtype: vlogdefine
 
+  RV_TRACE:
+    datatype: bool
+    paramtype: vlogdefine
+    description: "RISC-V trace interface implementation"
+
   SYNTHESIS:
     datatype: bool
     paramtype: vlogdefine
@@ -147,6 +152,7 @@ targets:
     <<: *default_target
     parameters:
       - SYNTHESIS=true
+      - RV_TRACE=true
       - RVFI=true
     default_tool: verilator
     tools:
@@ -166,6 +172,7 @@ targets:
       - files_rtl
     parameters:
       - SYNTHESIS=true
+      - RV_TRACE=true
       - RVFI=true
     default_tool: veribleformat
     toplevel: ibex_core

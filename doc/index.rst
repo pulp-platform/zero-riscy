@@ -24,6 +24,7 @@ Ibex User Manual
    tracer
    rvfi
    verification
+   riscv_trace
    examples
    concierge
 

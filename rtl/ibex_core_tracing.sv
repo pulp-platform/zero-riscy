@@ -64,6 +64,16 @@ module ibex_core_tracing #(
     input  logic [14:0] irq_fast_i,
     input  logic        irq_nm_i,       // non-maskeable interrupt
 
+`ifdef RV_TRACE
+    // riscv_trace_spec signals 
+    output logic [2:0]  rv_trace_itype,
+    output logic [31:0] rv_trace_iaddr,
+    output logic [6:0]  rv_trace_cause,
+    output logic [31:0] rv_trace_tval,
+    output logic [1:0]  rv_trace_priv, 
+    output logic        rv_trace_iretire,
+`endif
+
     // Debug Interface
     input  logic        debug_req_i,
 
@@ -179,6 +189,15 @@ module ibex_core_tracing #(
     .rvfi_mem_wmask,
     .rvfi_mem_rdata,
     .rvfi_mem_wdata,
+
+`ifdef RV_TRACE
+    .rv_trace_itype,
+    .rv_trace_iaddr,
+    .rv_trace_cause,
+    .rv_trace_tval,
+    .rv_trace_priv,
+    .rv_trace_iretire,
+`endif
 
     .fetch_enable_i,
     .core_sleep_o
