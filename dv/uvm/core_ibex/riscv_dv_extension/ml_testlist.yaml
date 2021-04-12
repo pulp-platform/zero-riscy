@@ -109,7 +109,7 @@
   gcc_opts: >
     -mno-strict-align
   gen_test: riscv_ml_test
-  rtl_test: core_ibex_base_test
+  rtl_test: core_ibex_reset_test
   no_post_compare: 1
 
 
@@ -229,6 +229,8 @@
 # 4)  One of the RTL simulation options +enable_irq_single_seq or
 #     +enable_irq_multiple_seq must be enabled.
 # 5)  The RTL simulation option +require_signature_addr must be 1.
+# 6)  Do not randomize the value of both +enable_nested_interrupt in gen_opts
+#     and +enable_nested_irq in sim_opts.
 
 - test: riscv_rand_irq_test
   description: >
@@ -237,6 +239,7 @@
     +require_signature_addr=1
     +enable_interrupt=1
     +enable_timer_irq=1
+    +enable_nested_interrupt=1
     +instr_cnt=10000
     +enable_write_pmp_csr=1
     +num_of_sub_program=5
@@ -294,5 +297,103 @@
     +require_signature_addr=1
     +enable_irq_single_seq=1
     +enable_irq_multiple_seq=0
-  rtl_test: core_ibex_debug_intr_basic_test
+    +enable_nested_irq=1
+  rtl_test: core_ibex_nested_irq_test
+  no_post_compare: 1
+
+
+# --------------------------------------------------------------------------------
+# ML Parameter Constraints - riscv_rand_mem_error_test
+# --------------------------------------------------------------------------------
+# A description of each generation parameter can be found in the 'Configuration'
+# section of the RISC-DV documentation
+# (https://github.com/google/riscv-dv/blob/master/docs/source/configuration.rst)
+#
+# This section will provide some constraints that must be placed on the set of
+# parameters relating to simulations with memory bus errors.
+# --------------------------------------------------------------------------------
+# 1)  +require_signature_addr must be 1 in gen_opts as well as in sim_opts.
+# 2)  +illegal_instr_ratio must be 0.
+# 3)  +no_ebreak must be 1.
+# 4)  +no_dret must be 1.
+# 5)  +no_wfi must be 1.
+# 6)  +enable_illegal_csr_instruction must be 0.
+# 7)  +enable_access_invalid_csr_level must be 0.
+# 8)  +no_csr_instr must be 1.
+
+- test: riscv_rand_mem_error_test
+  description: >
+    Randomly insert memory bus errors in both IMEM and DMEM.
+  gen_opts: >
+    +instr_cnt=10000
+    +num_of_sub_program=5
+    +require_signature_addr=1
+    +enable_write_pmp_csr=1
+    +illegal_instr_ratio=0
+    +hint_instr_ratio=5
+    +no_ebreak=1
+    +no_dret=1
+    +no_wfi=1
+    +set_mstatus_tw=0
+    +no_branch_jump=0
+    +no_csr_instr=0
+    +fix_sp=0
+    +enable_illegal_csr_instruction=0
+    +enable_access_invalid_csr_level=0
+    +enable_misaligned_instr=0
+    +enable_dummy_csr_write=0
+    +no_data_page=0
+    +no_directed_instr=0
+    +no_fence=0
+    +enable_unaligned_load_store=1
+    +disable_compressed_instr=0
+    +randomize_csr=0
+    +enable_b_extension=1
+    +enable_bitmanip_groups=zbb,zb_tmp,zbt,zbs,zbp,zbf,zbe,zbc,zbr
+    +boot_mode=u
+    +stream_name_0=riscv_load_store_rand_instr_stream
+    +stream_freq_0=4
+    +stream_name_1=riscv_loop_instr
+    +stream_freq_1=4
+    +stream_name_2=riscv_hazard_instr_stream
+    +stream_freq_2=4
+    +stream_name_3=riscv_load_store_hazard_instr_stream
+    +stream_freq_3=4
+    +stream_name_4=riscv_mem_region_stress_test
+    +stream_freq_4=4
+    +stream_name_5=riscv_jal_instr
+    +stream_freq_5=4
+    +stream_name_6=riscv_int_numeric_corner_stream
+    +stream_freq_6=4
+    +stream_name_7=riscv_multi_page_load_store_instr_stream
+    +stream_freq_7=4
+    +stream_name_8=riscv_load_store_rand_addr_instr_stream
+    +stream_freq_8=4
+    +stream_name_9=riscv_single_load_store_instr_stream
+    +stream_freq_9=4
+    +stream_name_10=riscv_load_store_stress_instr_stream
+    +stream_freq_10=4
+  iterations: 1
+  no_iss: 1
+  gcc_opts: >
+    -mno-strict-align
+  gen_test: riscv_ml_test
+  rtl_test: core_ibex_mem_error_test
+  sim_opts: >
+    +require_signature_addr=1
+  no_post_compare: 1
+
+
+# --------------------------------------------------------------------------------
+# ML Parameter Constraints - riscv_csr_test
+# --------------------------------------------------------------------------------
+# This test has no controllable parameters, and will just provide an increase
+# in coverage relating to control-status registers.
+
+- test: riscv_csr_test
+  description: >
+    Test all CSR instructions on all implement CSRs
+  iterations: 1
+  no_iss: 1
+  rtl_test: core_ibex_csr_test
   no_post_compare: 1
