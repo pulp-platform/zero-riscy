@@ -123,6 +123,18 @@ parameters:
     paramtype: vlogparam
     description: "Number of PMP regions"
 
+  XInterface:
+    datatype: int
+    default: 1
+    paramtype: vlogparam
+    description: "Enables the RISC-V Agnostic Extension Interface (EXPERIMENTAL)"
+
+  XInterfaceTernaryOps:
+    datatype: int
+    default: 1
+    paramtype: vlogparam
+    description: "Enables ternary insn support for RISC-V Agnostic Extension Interface (EXPERIMENTAL)"
+
 targets:
   default: &default_target
     filesets:

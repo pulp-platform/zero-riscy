@@ -20,7 +20,8 @@ small:
   PMPEnable                : 0
   PMPGranularity           : 0
   PMPNumRegions            : 4
-
+  XInterface               : 0
+  XInterfaceTernaryOps     : 0
 # ===============================
 # * EXPERIMENTAL CONFIGURATIONS *
 # ===============================
@@ -41,6 +42,8 @@ experimental-maxperf:
   PMPEnable                : 0
   PMPGranularity           : 0
   PMPNumRegions            : 4
+  XInterface               : 0
+  XInterfaceTernaryOps     : 0
 
 # experimental-maxperf config above plus PMP enabled with 16 regions.
 experimental-maxperf-pmp:
@@ -56,6 +59,8 @@ experimental-maxperf-pmp:
   PMPEnable                : 1
   PMPGranularity           : 0
   PMPNumRegions            : 16
+  XInterface               : 0
+  XInterfaceTernaryOps     : 0
 
 # experimental-maxperf-pmp config above with balanced bitmanip extension
 experimental-maxperf-pmp-bmbalanced:
@@ -71,6 +76,8 @@ experimental-maxperf-pmp-bmbalanced:
   PMPEnable                : 1
   PMPGranularity           : 0
   PMPNumRegions            : 16
+  XInterface               : 0
+  XInterfaceTernaryOps     : 0
 
 # experimental-maxperf-pmp config above with full bitmanip extension
 experimental-maxperf-pmp-bmfull:
@@ -86,6 +93,8 @@ experimental-maxperf-pmp-bmfull:
   PMPEnable                : 1
   PMPGranularity           : 0
   PMPNumRegions            : 16
+  XInterface               : 0
+  XInterfaceTernaryOps     : 0
 
 # experimental-maxperf-pmp-bmfull config above with icache enabled
 experimental-maxperf-pmp-bmfull-icache:
@@ -101,6 +110,8 @@ experimental-maxperf-pmp-bmfull-icache:
   PMPEnable                : 1
   PMPGranularity           : 0
   PMPNumRegions            : 16
+  XInterface               : 0
+  XInterfaceTernaryOps     : 0
 
 # experimental-maxperf with branch predictor switched on. This exists to allow
 # easy use of Ibex with the branch predictor in particular for CI runs. The
@@ -119,4 +130,39 @@ experimental-branch-predictor:
   PMPEnable                : 0
   PMPGranularity           : 0
   PMPNumRegions            : 4
+  XInterface               : 0
+  XInterfaceTernaryOps     : 0
 
+# experimental configuration with XInterface, with wb stage
+experimental-xinterface-3stage:
+  RV32E                    : 0
+  RV32M                    : "ibex_pkg::RV32MFast"
+  RV32B                    : "ibex_pkg::RV32BNone"
+  RegFile                  : "ibex_pkg::RegFileFF"
+  BranchTargetALU          : 1
+  WritebackStage           : 1
+  ICache                   : 1
+  ICacheECC                : 0
+  BranchPredictor          : 0
+  PMPEnable                : 0
+  PMPGranularity           : 0
+  PMPNumRegions            : 4
+  XInterface               : 1
+  XInterfaceTernaryOps     : 1
+
+# experimental configuration with XInterface, without wb stage
+experimental-xinterface-2stage:
+  RV32E                    : 0
+  RV32M                    : "ibex_pkg::RV32MFast"
+  RV32B                    : "ibex_pkg::RV32BNone"
+  RegFile                  : "ibex_pkg::RegFileFF"
+  BranchTargetALU          : 1
+  WritebackStage           : 0
+  ICache                   : 1
+  ICacheECC                : 0
+  BranchPredictor          : 0
+  PMPEnable                : 0
+  PMPGranularity           : 0
+  PMPNumRegions            : 4
+  XInterface               : 1
+  XInterfaceTernaryOps     : 1

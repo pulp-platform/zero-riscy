@@ -2,32 +2,39 @@ CAPI=2:
 # Copyright lowRISC contributors.
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
-name: "lowrisc:ibex:ibex_top_tracing:0.1"
-description: "Ibex, a small RV32 CPU core with tracing enabled"
+name: "lowrisc:ibex:ibex_complex_system"
+description: "Generic simple system for running binaries on ibex using verilator"
 filesets:
-  files_rtl:
+  files_sim:
     depend:
-      - lowrisc:ibex:ibex_top
-      - lowrisc:ibex:ibex_tracer
+      - lowrisc:ibex:ibex_top_tracing
+      - lowrisc:ibex:sim_shared
+      - pulp-platform.org::riscv-extension-interface
+      - pulp-platform.org::common_cells:1.20.0
+      - riscv:riscv-bitmanip:rvb_full
     files:
-      - rtl/ibex_top_tracing.sv
+      - rtl/ibex_complex_system.sv
     file_type: systemVerilogSource
 
+  files_verilator:
+    depend:
+      - lowrisc:dv_verilator:memutil_verilator
+      - lowrisc:dv_verilator:simutil_verilator
+      - lowrisc:dv_verilator:ibex_pcounts
+    files:
+      - ibex_complex_system.cc: { file_type: cppSource }
+      - lint/verilator_waiver.vlt: {file_type: vlt}
+
+  files_lint_verible:
+    files:
+      - lint/verible_waiver.vbw: {file_type: veribleLintWaiver}
+
 parameters:
-  # The tracer uses the RISC-V Formal Interface (RVFI) to collect trace signals.
-  RVFI:
-    datatype: bool
-    paramtype: vlogdefine
-    default: true
-
-  SYNTHESIS:
-    datatype: bool
-    paramtype: vlogdefine
-
   RV32E:
     datatype: int
-    default: 0
     paramtype: vlogparam
+    default: 0
+    description: "Enable the E ISA extension (reduced register set) [0/1]"
 
   RV32M:
     datatype: str
@@ -59,29 +66,34 @@ parameters:
     paramtype: vlogparam
     description: "Enable ECC protection in instruction cache"
 
+  SRAMInitFile:
+    datatype: str
+    paramtype: vlogparam
+    description: "Path to a vmem file to initialize the RAM with"
+
   BranchTargetALU:
     datatype: int
-    default: 0
     paramtype: vlogparam
-    description: "Enables separate branch target ALU (increasing branch performance EXPERIMENTAL) [0/1]"
+    default: 0
+    description: "Enables separate branch target ALU (increasing branch performance EXPERIMENTAL)"
 
   WritebackStage:
     datatype: int
-    default: 0
-    paramtype: vlogparam
-    description: "Enables third pipeline stage (EXPERIMENTAL) [0/1]"
-
-  BranchPredictor:
-    datatype: int
     paramtype: vlogparam
     default: 0
-    description: "Enables static branch prediction (EXPERIMENTAL)"
+    description: "Enables third pipeline stage (EXPERIMENTAL)"
 
   SecureIbex:
     datatype: int
     default: 0
     paramtype: vlogparam
     description: "Enables security hardening features (EXPERIMENTAL) [0/1]"
+
+  BranchPredictor:
+    datatype: int
+    paramtype: vlogparam
+    default: 0
+    description: "Enables static branch prediction (EXPERIMENTAL)"
 
   PMPEnable:
     datatype: int
@@ -116,16 +128,11 @@ parameters:
 targets:
   default: &default_target
     filesets:
-      - files_rtl
+      - tool_verilator ? (files_verilator)
+      - tool_veriblelint ? (files_lint_verible)
+      - files_sim
+    toplevel: ibex_complex_system
     parameters:
-      - RVFI=true
-    toplevel: ibex_top_tracing
-
-  lint:
-    <<: *default_target
-    parameters:
-      - RVFI=true
-      - SYNTHESIS=true
       - RV32E
       - RV32M
       - RV32B
@@ -134,31 +141,52 @@ targets:
       - ICacheECC
       - BranchTargetALU
       - WritebackStage
-      - BranchPredictor
       - SecureIbex
+      - BranchPredictor
       - PMPEnable
       - PMPGranularity
       - PMPNumRegions
+      - SRAMInitFile
       - XInterface
       - XInterfaceTernaryOps
+
+  lint:
+    <<: *default_target
     default_tool: verilator
     tools:
       verilator:
         mode: lint-only
         verilator_options:
           - "-Wall"
+          - "-Wno-DECLFILENAME"
           # RAM primitives wider than 64bit (required for ECC) fail to build in
           # Verilator without increasing the unroll count (see Verilator#1266)
           - "--unroll-count 72"
-  format:
-    filesets:
-      - files_rtl
-    parameters:
-      - SYNTHESIS=true
-      - RVFI=true
-    default_tool: veribleformat
-    toplevel: ibex_top_tracing
+
+  sim:
+    <<: *default_target
+    default_tool: verilator
     tools:
-      veribleformat:
-        verible_format_args:
-          - "--inplace"
+      vcs:
+        vcs_options:
+          - '-xlrm uniq_prior_final'
+          - '-debug_access+r'
+          - '-assert svaext'
+      verilator:
+        mode: cc
+        verilator_options:
+          # Disabling tracing reduces compile times but doesn't have a
+          # huge influence on runtime performance.
+          - '--trace'
+          - '--trace-fst' # this requires -DVM_TRACE_FMT_FST in CFLAGS below!
+          - '--trace-structs'
+          - '--trace-params'
+          - '--trace-max-array 1024'
+          - '-CFLAGS "-std=c++11 -Wall -DVM_TRACE_FMT_FST -DTOPLEVEL_NAME=ibex_complex_system -g"'
+          - '-LDFLAGS "-pthread -lutil -lelf"'
+          - "-Wall"
+          - '-Wno-UNOPTFLAT'
+          #- "-Wwarn-IMPERFECTSCH"
+          # RAM primitives wider than 64bit (required for ECC) fail to build in
+          # Verilator without increasing the unroll count (see Verilator#1266)
+          - "--unroll-count 72"

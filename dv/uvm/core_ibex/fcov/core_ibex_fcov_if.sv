@@ -37,7 +37,10 @@ interface core_ibex_fcov_if import ibex_pkg::*; (
     InstrCategoryCompressedIllegal,
     InstrCategoryUncompressedIllegal,
     InstrCategoryCSRIllegal,
-    InstrCategoryOtherIllegal
+    InstrCategoryOtherIllegal,
+    InstrCategoryAccOfflSpec,
+    InstrCategoryAccOffl,
+    InstrCategoryAccWb
   } instr_category_e;
 
   typedef enum {
@@ -112,12 +115,18 @@ interface core_ibex_fcov_if import ibex_pkg::*; (
         id_instr_category = InstrCategoryFetchError;
       end else if (id_stage_i.illegal_c_insn_i) begin
         id_instr_category = InstrCategoryCompressedIllegal;
-      end else if (id_stage_i.illegal_insn_dec) begin
+      end else if (id_stage_i.acc_illegal) begin
         id_instr_category = InstrCategoryUncompressedIllegal;
       end else if (id_stage_i.illegal_csr_insn_i) begin
         id_instr_category = InstrCategoryCSRIllegal;
       end else if (id_stage_i.illegal_insn_o) begin
         id_instr_category = InstrCategoryOtherIllegal;
+      end else if (id_stage_i.acc_insn_candidate) begin
+        id_instr_category = InstrCategoryAccOfflSpec;
+      end else if (id_stage_i.acc_dispatch_o) begin
+        id_instr_category = InstrCategoryAccOffl;
+      end else if (id_stage_i.acc_writeback_o) begin
+        id_instr_category = InstrCategoryAccWb;
       end
     end else begin
       id_instr_category = InstrCategoryNone;
@@ -176,7 +185,7 @@ interface core_ibex_fcov_if import ibex_pkg::*; (
       id_instr_category == InstrCategoryFenceI && id_stage_i.instr_first_cycle |->
       id_stage_i.icache_inval_o)
 
-
+  //TODO: AccOffl Insn assertions
 
   id_stall_type_e id_stall_type;
 

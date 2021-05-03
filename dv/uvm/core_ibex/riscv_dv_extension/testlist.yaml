@@ -733,5 +733,23 @@
     +enable_b_extension=1
     +enable_bitmanip_groups=zbb,zb_tmp,zbt,zbs,zbf
   rtl_test: core_ibex_base_test
+  #rtl_params:
+    #RV32B: ["ibex_pkg::RV32BFull", "ibex_pkg::RV32BBalanced"]
+    #
+- test: riscv_bitmanip_xinterface_test
+  desc: >
+    Random instruction test with supported B extension instructions in using the
+    RISC-V Extension Interface
+  iterations: 10
+  gen_test: riscv_rand_instr_test
+  gen_opts: >
+    +enable_b_extension=1
+    +enable_bitmanip_groups=zbb,zbt
+  rtl_test: core_ibex_base_test
   rtl_params:
-    RV32B: ["ibex_pkg::RV32BFull", "ibex_pkg::RV32BBalanced"]
+    XInterface: 1
+    XInterfaceTernaryOps: 1
+  compare_opts:
+    in_order_mode: 0
+
+

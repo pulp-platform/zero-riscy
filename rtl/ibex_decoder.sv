@@ -14,10 +14,10 @@
 `include "prim_assert.sv"
 
 module ibex_decoder #(
-    parameter bit RV32E               = 0,
-    parameter ibex_pkg::rv32m_e RV32M = ibex_pkg::RV32MFast,
-    parameter ibex_pkg::rv32b_e RV32B = ibex_pkg::RV32BNone,
-    parameter bit BranchTargetALU     = 0
+    parameter bit RV32E                = 0,
+    parameter ibex_pkg::rv32m_e RV32M  = ibex_pkg::RV32MFast,
+    parameter ibex_pkg::rv32b_e RV32B  = ibex_pkg::RV32BNone,
+    parameter bit BranchTargetALU      = 0
 ) (
     input  logic                 clk_i,
     input  logic                 rst_ni,
@@ -94,7 +94,14 @@ module ibex_decoder #(
 
     // jump/branches
     output logic                 jump_in_dec_o,         // jump is being calculated in ALU
-    output logic                 branch_in_dec_o
+    output logic                 branch_in_dec_o,
+
+    // agnostic ternary ops
+    input logic                  acc_use_rs3_i,
+    output logic [4:0]           instr_rs1_o,
+    output logic [4:0]           instr_rs2_o,
+    output logic [4:0]           instr_rs3_o,
+    output logic [4:0]           instr_rd_o
 );
 
   import ibex_pkg::*;
@@ -107,11 +114,6 @@ module ibex_decoder #(
   logic [31:0] instr;
   logic [31:0] instr_alu;
   logic [9:0]  unused_instr_alu;
-  // Source/Destination register instruction index
-  logic [4:0] instr_rs1;
-  logic [4:0] instr_rs2;
-  logic [4:0] instr_rs3;
-  logic [4:0] instr_rd;
 
   logic        use_rs3_d;
   logic        use_rs3_q;
@@ -139,7 +141,7 @@ module ibex_decoder #(
   assign imm_j_type_o = { {12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0 };
 
   // immediate for CSR manipulation (zero extended)
-  assign zimm_rs1_type_o = { 27'b0, instr_rs1 }; // rs1
+  assign zimm_rs1_type_o = { 27'b0, instr_rs1_o }; // rs1
 
   if (RV32B != RV32BNone) begin : gen_rs3_flop
     // the use of rs3 is known one cycle ahead.
@@ -163,15 +165,16 @@ module ibex_decoder #(
   end
 
   // source registers
-  assign instr_rs1 = instr[19:15];
-  assign instr_rs2 = instr[24:20];
-  assign instr_rs3 = instr[31:27];
-  assign rf_raddr_a_o = (use_rs3_q & ~instr_first_cycle_i) ? instr_rs3 : instr_rs1; // rs3 / rs1
-  assign rf_raddr_b_o = instr_rs2; // rs2
+  assign instr_rs1_o = instr[19:15];
+  assign instr_rs2_o = instr[24:20];
+  assign instr_rs3_o = instr[31:27];
+  assign rf_raddr_a_o =
+      ((use_rs3_q & ~instr_first_cycle_i) | acc_use_rs3_i) ? instr_rs3_o : instr_rs1_o; // rs3 / rs1
+  assign rf_raddr_b_o = instr_rs2_o; // rs2
 
   // destination register
-  assign instr_rd = instr[11:7];
-  assign rf_waddr_o   = instr_rd; // rd
+  assign instr_rd_o = instr[11:7];
+  assign rf_waddr_o   = instr_rd_o; // rd
 
   ////////////////////
   // Register check //
@@ -193,7 +196,7 @@ module ibex_decoder #(
     // CSRRSI/CSRRCI must not write 0 to CSRs (uimm[4:0]=='0)
     // CSRRS/CSRRC must not write from x0 to CSRs (rs1=='0)
     if ((csr_op == CSR_OP_SET || csr_op == CSR_OP_CLEAR) &&
-        instr_rs1 == '0) begin
+        instr_rs1_o == '0) begin
       csr_op_o = CSR_OP_READ;
     end
   end
@@ -601,7 +604,7 @@ module ibex_decoder #(
           endcase
 
           // rs1 and rd must be 0
-          if (instr_rs1 != 5'b0 || instr_rd != 5'b0) begin
+          if (instr_rs1_o != 5'b0 || instr_rd_o != 5'b0) begin
             illegal_insn = 1'b1;
           end
         end else begin

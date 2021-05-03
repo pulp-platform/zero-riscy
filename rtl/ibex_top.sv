@@ -13,25 +13,27 @@
  * Top level module of the ibex RISC-V core
  */
 module ibex_top #(
-    parameter bit                 PMPEnable        = 1'b0,
-    parameter int unsigned        PMPGranularity   = 0,
-    parameter int unsigned        PMPNumRegions    = 4,
-    parameter int unsigned        MHPMCounterNum   = 0,
-    parameter int unsigned        MHPMCounterWidth = 40,
-    parameter bit                 RV32E            = 1'b0,
-    parameter ibex_pkg::rv32m_e   RV32M            = ibex_pkg::RV32MFast,
-    parameter ibex_pkg::rv32b_e   RV32B            = ibex_pkg::RV32BNone,
-    parameter ibex_pkg::regfile_e RegFile          = ibex_pkg::RegFileFF,
-    parameter bit                 BranchTargetALU  = 1'b0,
-    parameter bit                 WritebackStage   = 1'b0,
-    parameter bit                 ICache           = 1'b0,
-    parameter bit                 ICacheECC        = 1'b0,
-    parameter bit                 BranchPredictor  = 1'b0,
-    parameter bit                 DbgTriggerEn     = 1'b0,
-    parameter int unsigned        DbgHwBreakNum    = 1,
-    parameter bit                 SecureIbex       = 1'b0,
-    parameter int unsigned        DmHaltAddr       = 32'h1A110800,
-    parameter int unsigned        DmExceptionAddr  = 32'h1A110808
+    parameter bit                 PMPEnable            = 1'b0,
+    parameter int unsigned        PMPGranularity       = 0,
+    parameter int unsigned        PMPNumRegions        = 4,
+    parameter int unsigned        MHPMCounterNum       = 0,
+    parameter int unsigned        MHPMCounterWidth     = 40,
+    parameter bit                 RV32E                = 1'b0,
+    parameter ibex_pkg::rv32m_e   RV32M                = ibex_pkg::RV32MFast,
+    parameter ibex_pkg::rv32b_e   RV32B                = ibex_pkg::RV32BNone,
+    parameter ibex_pkg::regfile_e RegFile              = ibex_pkg::RegFileFF,
+    parameter bit                 BranchTargetALU      = 1'b0,
+    parameter bit                 WritebackStage       = 1'b0,
+    parameter bit                 ICache               = 1'b0,
+    parameter bit                 ICacheECC            = 1'b0,
+    parameter bit                 BranchPredictor      = 1'b0,
+    parameter bit                 DbgTriggerEn         = 1'b0,
+    parameter int unsigned        DbgHwBreakNum        = 1,
+    parameter bit                 SecureIbex           = 1'b0,
+    parameter int unsigned        DmHaltAddr           = 32'h1A110800,
+    parameter int unsigned        DmExceptionAddr      = 32'h1A110808,
+    parameter bit                 XInterface           = 1'b0,
+    parameter bit                 XInterfaceTernaryOps = 1'b0
 ) (
     // Clock and Reset
     input  logic                         clk_i,
@@ -72,6 +74,30 @@ module ibex_top #(
     // Debug Interface
     input  logic                         debug_req_i,
     output ibex_pkg::crash_dump_t        crash_dump_o,
+
+    // RISC-V Extension Interface REIv0.1_32T.
+    // `acc_x` denotes the accelerator-agnostic instruction offloading channel.
+    // Subchannel `q`: Request channel. Used to initiate an offloading request.
+    // Subchannel `k`: Ack channel. Carries instruction metadata for correct handling by the
+    // core.
+    // Subchannel `p`: Response channel. Carries the accelerator response data.
+    output logic                         acc_x_q_valid_o,
+    input  logic                         acc_x_q_ready_i,
+    output logic [31:0]                  acc_x_q_instr_data_o,
+    output logic [31:0]                  acc_x_q_rs1_o,
+    output logic [31:0]                  acc_x_q_rs2_o,
+    output logic [31:0]                  acc_x_q_rs3_o,
+    output logic [ 2:0]                  acc_x_q_rs_valid_o,
+    output logic                         acc_x_q_rd_clean_o,
+    input  logic                         acc_x_k_writeback_i,
+    input  logic                         acc_x_k_is_mem_op_i,
+    input  logic                         acc_x_k_accept_i,
+
+    input  logic                         acc_x_p_valid_i,
+    output logic                         acc_x_p_ready_o,
+    input  logic [4:0]                   acc_x_p_rd_i,
+    input  logic [31:0]                  acc_x_p_data_i,
+    input  logic                         acc_x_p_error_i,
 
     // RISC-V Formal Interface
     // Does not comply with the coding standards of _i/_o suffixes, but follows
@@ -189,30 +215,32 @@ module ibex_top #(
   ////////////////////////
 
   ibex_core #(
-    .PMPEnable         ( PMPEnable         ),
-    .PMPGranularity    ( PMPGranularity    ),
-    .PMPNumRegions     ( PMPNumRegions     ),
-    .MHPMCounterNum    ( MHPMCounterNum    ),
-    .MHPMCounterWidth  ( MHPMCounterWidth  ),
-    .RV32E             ( RV32E             ),
-    .RV32M             ( RV32M             ),
-    .RV32B             ( RV32B             ),
-    .BranchTargetALU   ( BranchTargetALU   ),
-    .ICache            ( ICache            ),
-    .ICacheECC         ( ICacheECC         ),
-    .BusSizeECC        ( BusSizeECC        ),
-    .TagSizeECC        ( TagSizeECC        ),
-    .LineSizeECC       ( LineSizeECC       ),
-    .BranchPredictor   ( BranchPredictor   ),
-    .DbgTriggerEn      ( DbgTriggerEn      ),
-    .DbgHwBreakNum     ( DbgHwBreakNum     ),
-    .WritebackStage    ( WritebackStage    ),
-    .SecureIbex        ( SecureIbex        ),
-    .DummyInstructions ( DummyInstructions ),
-    .RegFileECC        ( RegFileECC        ),
-    .RegFileDataWidth  ( RegFileDataWidth  ),
-    .DmHaltAddr        ( DmHaltAddr        ),
-    .DmExceptionAddr   ( DmExceptionAddr   )
+    .PMPEnable            ( PMPEnable            ),
+    .PMPGranularity       ( PMPGranularity       ),
+    .PMPNumRegions        ( PMPNumRegions        ),
+    .MHPMCounterNum       ( MHPMCounterNum       ),
+    .MHPMCounterWidth     ( MHPMCounterWidth     ),
+    .RV32E                ( RV32E                ),
+    .RV32M                ( RV32M                ),
+    .RV32B                ( RV32B                ),
+    .BranchTargetALU      ( BranchTargetALU      ),
+    .ICache               ( ICache               ),
+    .ICacheECC            ( ICacheECC            ),
+    .BusSizeECC           ( BusSizeECC           ),
+    .TagSizeECC           ( TagSizeECC           ),
+    .LineSizeECC          ( LineSizeECC          ),
+    .BranchPredictor      ( BranchPredictor      ),
+    .DbgTriggerEn         ( DbgTriggerEn         ),
+    .DbgHwBreakNum        ( DbgHwBreakNum        ),
+    .WritebackStage       ( WritebackStage       ),
+    .SecureIbex           ( SecureIbex           ),
+    .DummyInstructions    ( DummyInstructions    ),
+    .RegFileECC           ( RegFileECC           ),
+    .RegFileDataWidth     ( RegFileDataWidth     ),
+    .DmHaltAddr           ( DmHaltAddr           ),
+    .DmExceptionAddr      ( DmExceptionAddr      ),
+    .XInterface           ( XInterface           ),
+    .XInterfaceTernaryOps ( XInterfaceTernaryOps )
   ) u_ibex_core (
     .clk_i (clk),
     .rst_ni,
@@ -266,6 +294,24 @@ module ibex_top #(
 
     .debug_req_i,
     .crash_dump_o,
+
+    .acc_x_q_valid_o,
+    .acc_x_q_ready_i,
+    .acc_x_q_instr_data_o,
+    .acc_x_q_rs1_o,
+    .acc_x_q_rs2_o,
+    .acc_x_q_rs3_o,
+    .acc_x_q_rs_valid_o,
+    .acc_x_q_rd_clean_o,
+    .acc_x_k_writeback_i,
+    .acc_x_k_is_mem_op_i,
+    .acc_x_k_accept_i,
+
+    .acc_x_p_valid_i,
+    .acc_x_p_ready_o,
+    .acc_x_p_rd_i,
+    .acc_x_p_data_i,
+    .acc_x_p_error_i,
 
 `ifdef RVFI
     .rvfi_valid,
@@ -519,6 +565,24 @@ module ibex_top #(
     logic                         debug_req_local;
     crash_dump_t                  crash_dump_local;
 
+    logic                         acc_x_q_valid_local;
+    logic                         acc_x_q_ready_local;
+    logic [31:0]                  acc_x_q_instr_data_local;
+    logic [31:0]                  acc_x_q_rs1_local;
+    logic [31:0]                  acc_x_q_rs2_local;
+    logic [31:0]                  acc_x_q_rs3_local;
+    logic [2:0]                   acc_x_q_rs_valid_local;
+    logic                         acc_x_q_rd_clean_local;
+    logic                         acc_x_k_writeback_local;
+    logic                         acc_x_k_is_mem_op_local;
+    logic                         acc_x_k_accept_local;
+
+    logic                         acc_x_p_valid_local;
+    logic                         acc_x_p_ready_local;
+    logic [4:0]                   acc_x_p_rd_local;
+    logic [31:0]                  acc_x_p_data_local;
+    logic                         acc_x_p_error_local;
+
     logic                         core_busy_local;
 
     assign buf_in = {
@@ -563,6 +627,23 @@ module ibex_top #(
       irq_pending,
       debug_req_i,
       crash_dump_o,
+      acc_x_q_valid_o,
+      acc_x_q_ready_i,
+      acc_x_q_instr_data_o,
+      acc_x_q_rs1_o,
+      acc_x_q_rs2_o,
+      acc_x_q_rs3_o,
+      acc_x_q_rs_valid_o,
+      acc_x_q_rd_clean_o,
+      acc_x_k_writeback_i,
+      acc_x_k_is_mem_op_i,
+      acc_x_k_accept_i,
+
+      acc_x_p_valid_i,
+      acc_x_p_ready_o,
+      acc_x_p_rd_i,
+      acc_x_p_data_i,
+      acc_x_p_error_i,
       core_busy_d
     };
 
@@ -608,6 +689,23 @@ module ibex_top #(
       irq_pending_local,
       debug_req_local,
       crash_dump_local,
+      acc_x_q_valid_local,
+      acc_x_q_ready_local,
+      acc_x_q_instr_data_local,
+      acc_x_q_rs1_local,
+      acc_x_q_rs2_local,
+      acc_x_q_rs3_local,
+      acc_x_q_rs_valid_local,
+      acc_x_q_rd_clean_local,
+      acc_x_k_writeback_local,
+      acc_x_k_is_mem_op_local,
+      acc_x_k_accept_local,
+
+      acc_x_p_valid_local,
+      acc_x_p_ready_local,
+      acc_x_p_rd_local,
+      acc_x_p_data_local,
+      acc_x_p_error_local,
       core_busy_local
     } = buf_out;
 
@@ -638,89 +736,109 @@ module ibex_top #(
 
     logic lockstep_alert_minor_local, lockstep_alert_major_local;
     ibex_lockstep #(
-      .PMPEnable         ( PMPEnable         ),
-      .PMPGranularity    ( PMPGranularity    ),
-      .PMPNumRegions     ( PMPNumRegions     ),
-      .MHPMCounterNum    ( MHPMCounterNum    ),
-      .MHPMCounterWidth  ( MHPMCounterWidth  ),
-      .RV32E             ( RV32E             ),
-      .RV32M             ( RV32M             ),
-      .RV32B             ( RV32B             ),
-      .BranchTargetALU   ( BranchTargetALU   ),
-      .ICache            ( ICache            ),
-      .ICacheECC         ( ICacheECC         ),
-      .BusSizeECC        ( BusSizeECC        ),
-      .TagSizeECC        ( TagSizeECC        ),
-      .LineSizeECC       ( LineSizeECC       ),
-      .BranchPredictor   ( BranchPredictor   ),
-      .DbgTriggerEn      ( DbgTriggerEn      ),
-      .DbgHwBreakNum     ( DbgHwBreakNum     ),
-      .WritebackStage    ( WritebackStage    ),
-      .SecureIbex        ( SecureIbex        ),
-      .DummyInstructions ( DummyInstructions ),
-      .RegFileECC        ( RegFileECC        ),
-      .RegFileDataWidth  ( RegFileDataWidth  ),
-      .DmHaltAddr        ( DmHaltAddr        ),
-      .DmExceptionAddr   ( DmExceptionAddr   )
+      .PMPEnable            ( PMPEnable            ),
+      .PMPGranularity       ( PMPGranularity       ),
+      .PMPNumRegions        ( PMPNumRegions        ),
+      .MHPMCounterNum       ( MHPMCounterNum       ),
+      .MHPMCounterWidth     ( MHPMCounterWidth     ),
+      .RV32E                ( RV32E                ),
+      .RV32M                ( RV32M                ),
+      .RV32B                ( RV32B                ),
+      .BranchTargetALU      ( BranchTargetALU      ),
+      .ICache               ( ICache               ),
+      .ICacheECC            ( ICacheECC            ),
+      .BusSizeECC           ( BusSizeECC           ),
+      .TagSizeECC           ( TagSizeECC           ),
+      .LineSizeECC          ( LineSizeECC          ),
+      .BranchPredictor      ( BranchPredictor      ),
+      .DbgTriggerEn         ( DbgTriggerEn         ),
+      .DbgHwBreakNum        ( DbgHwBreakNum        ),
+      .WritebackStage       ( WritebackStage       ),
+      .SecureIbex           ( SecureIbex           ),
+      .DummyInstructions    ( DummyInstructions    ),
+      .RegFileECC           ( RegFileECC           ),
+      .RegFileDataWidth     ( RegFileDataWidth     ),
+      .DmHaltAddr           ( DmHaltAddr           ),
+      .DmExceptionAddr      ( DmExceptionAddr      ),
+      .XInterface           ( XInterface           ),
+      .XInterfaceTernaryOps ( XInterfaceTernaryOps )
     ) u_ibex_lockstep (
-      .clk_i             (clk),
-      .rst_ni            (rst_ni),
+      .clk_i                (clk),
+      .rst_ni               (rst_ni),
 
-      .hart_id_i         (hart_id_local),
-      .boot_addr_i       (boot_addr_local),
+      .hart_id_i            (hart_id_local),
+      .boot_addr_i          (boot_addr_local),
 
-      .instr_req_i       (instr_req_local),
-      .instr_gnt_i       (instr_gnt_local),
-      .instr_rvalid_i    (instr_rvalid_local),
-      .instr_addr_i      (instr_addr_local),
-      .instr_rdata_i     (instr_rdata_local),
-      .instr_err_i       (instr_err_local),
+      .instr_req_i          (instr_req_local),
+      .instr_gnt_i          (instr_gnt_local),
+      .instr_rvalid_i       (instr_rvalid_local),
+      .instr_addr_i         (instr_addr_local),
+      .instr_rdata_i        (instr_rdata_local),
+      .instr_err_i          (instr_err_local),
 
-      .data_req_i        (data_req_local),
-      .data_gnt_i        (data_gnt_local),
-      .data_rvalid_i     (data_rvalid_local),
-      .data_we_i         (data_we_local),
-      .data_be_i         (data_be_local),
-      .data_addr_i       (data_addr_local),
-      .data_wdata_i      (data_wdata_local),
-      .data_rdata_i      (data_rdata_local),
-      .data_err_i        (data_err_local),
+      .data_req_i           (data_req_local),
+      .data_gnt_i           (data_gnt_local),
+      .data_rvalid_i        (data_rvalid_local),
+      .data_we_i            (data_we_local),
+      .data_be_i            (data_be_local),
+      .data_addr_i          (data_addr_local),
+      .data_wdata_i         (data_wdata_local),
+      .data_rdata_i         (data_rdata_local),
+      .data_err_i           (data_err_local),
 
-      .dummy_instr_id_i  (dummy_instr_id_local),
-      .rf_raddr_a_i      (rf_raddr_a_local),
-      .rf_raddr_b_i      (rf_raddr_b_local),
-      .rf_waddr_wb_i     (rf_waddr_wb_local),
-      .rf_we_wb_i        (rf_we_wb_local),
-      .rf_wdata_wb_ecc_i (rf_wdata_wb_ecc_local),
-      .rf_rdata_a_ecc_i  (rf_rdata_a_ecc_local),
-      .rf_rdata_b_ecc_i  (rf_rdata_b_ecc_local),
+      .dummy_instr_id_i     (dummy_instr_id_local),
+      .rf_raddr_a_i         (rf_raddr_a_local),
+      .rf_raddr_b_i         (rf_raddr_b_local),
+      .rf_waddr_wb_i        (rf_waddr_wb_local),
+      .rf_we_wb_i           (rf_we_wb_local),
+      .rf_wdata_wb_ecc_i    (rf_wdata_wb_ecc_local),
+      .rf_rdata_a_ecc_i     (rf_rdata_a_ecc_local),
+      .rf_rdata_b_ecc_i     (rf_rdata_b_ecc_local),
 
-      .ic_tag_req_i      (ic_tag_req_local),
-      .ic_tag_write_i    (ic_tag_write_local),
-      .ic_tag_addr_i     (ic_tag_addr_local),
-      .ic_tag_wdata_i    (ic_tag_wdata_local),
-      .ic_tag_rdata_i    (ic_tag_rdata_local),
-      .ic_data_req_i     (ic_data_req_local),
-      .ic_data_write_i   (ic_data_write_local),
-      .ic_data_addr_i    (ic_data_addr_local),
-      .ic_data_wdata_i   (ic_data_wdata_local),
-      .ic_data_rdata_i   (ic_data_rdata_local),
+      .ic_tag_req_i         (ic_tag_req_local),
+      .ic_tag_write_i       (ic_tag_write_local),
+      .ic_tag_addr_i        (ic_tag_addr_local),
+      .ic_tag_wdata_i       (ic_tag_wdata_local),
+      .ic_tag_rdata_i       (ic_tag_rdata_local),
+      .ic_data_req_i        (ic_data_req_local),
+      .ic_data_write_i      (ic_data_write_local),
+      .ic_data_addr_i       (ic_data_addr_local),
+      .ic_data_wdata_i      (ic_data_wdata_local),
+      .ic_data_rdata_i      (ic_data_rdata_local),
 
-      .irq_software_i    (irq_software_local),
-      .irq_timer_i       (irq_timer_local),
-      .irq_external_i    (irq_external_local),
-      .irq_fast_i        (irq_fast_local),
-      .irq_nm_i          (irq_nm_local),
-      .irq_pending_i     (irq_pending_local),
+      .irq_software_i       (irq_software_local),
+      .irq_timer_i          (irq_timer_local),
+      .irq_external_i       (irq_external_local),
+      .irq_fast_i           (irq_fast_local),
+      .irq_nm_i             (irq_nm_local),
+      .irq_pending_i        (irq_pending_local),
 
-      .debug_req_i       (debug_req_local),
-      .crash_dump_i      (crash_dump_local),
+      .debug_req_i          (debug_req_local),
+      .crash_dump_i         (crash_dump_local),
 
-      .alert_minor_o     (lockstep_alert_minor_local),
-      .alert_major_o     (lockstep_alert_major_local),
-      .core_busy_i       (core_busy_local),
-      .test_en_i         (test_en_i),
-      .scan_rst_ni       (scan_rst_ni)
+      .acc_x_q_valid_i      (acc_x_q_valid_local),
+      .acc_x_q_ready_i      (acc_x_q_ready_local),
+      .acc_x_q_instr_data_i (acc_x_q_instr_data_local),
+      .acc_x_q_rs1_i        (acc_x_q_rs1_local),
+      .acc_x_q_rs2_i        (acc_x_q_rs2_local),
+      .acc_x_q_rs3_i        (acc_x_q_rs3_local),
+      .acc_x_q_rs_valid_i   (acc_x_q_rs_valid_local),
+      .acc_x_q_rd_clean_i   (acc_x_q_rd_clean_local),
+      .acc_x_k_writeback_i  (acc_x_k_writeback_local),
+      .acc_x_k_is_mem_op_i  (acc_x_k_is_mem_op_local),
+      .acc_x_k_accept_i     (acc_x_k_accept_local),
+
+      .acc_x_p_valid_i      (acc_x_p_valid_local),
+      .acc_x_p_ready_i      (acc_x_p_ready_local),
+      .acc_x_p_rd_i         (acc_x_p_rd_local),
+      .acc_x_p_data_i       (acc_x_p_data_local),
+      .acc_x_p_error_i      (acc_x_p_error_local),
+
+      .alert_minor_o        (lockstep_alert_minor_local),
+      .alert_major_o        (lockstep_alert_major_local),
+      .core_busy_i          (core_busy_local),
+      .test_en_i            (test_en_i),
+      .scan_rst_ni          (scan_rst_ni)
     );
 
     // Manually buffer the output signals.

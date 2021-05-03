@@ -256,9 +256,10 @@ typedef enum logic [2:0] {
 } imm_b_sel_e;
 
 // Regfile write data selection
-typedef enum logic {
+typedef enum logic [1:0] {
   RF_WD_EX,
-  RF_WD_CSR
+  RF_WD_CSR,
+  RF_WD_ACC
 } rf_wd_sel_e;
 
 //////////////

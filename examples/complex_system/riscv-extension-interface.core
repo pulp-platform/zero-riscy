@@ -1,0 +1,50 @@
+CAPI=2:
+
+name: "pulp-platform.org::riscv-extension-interface:0.0"
+description: "RISC-V Agnostic Extensions Interface"
+
+filesets:
+  files_rtl:
+    files:
+      - riscv-extension-interface/include/acc_interface/typedef.svh : {is_include_file : true, include_path : include}
+      - riscv-extension-interface/include/acc_interface/assign.svh : {is_include_file : true, include_path : include}
+      # Level 0
+      - riscv-extension-interface/src/acc_pkg.sv
+      - riscv-extension-interface/src/acc_intf.sv
+      # level 1
+      - riscv-extension-interface/src/acc_rvb_pkg.sv
+      - riscv-extension-interface/src/acc_adapter.sv
+      - riscv-extension-interface/src/acc_interconnect.sv
+      - riscv-extension-interface/src/acc_predecoder.sv
+    file_type : systemVerilogSource
+
+parameters:
+  DataWidth:
+    datatype: int
+    default: 32
+    paramtype: vlogparam
+
+  NumHier:
+    datatype: int
+    default: 1
+    paramtype: vlogparam
+
+  NumRsp:
+    datatype: str
+    default: {1}
+    paramtype: vlogdefine
+
+  TernaryOps:
+    datatype: int
+    default: 1
+    paramtype: vlogparam
+
+  DualWriteback:
+    datatype: int
+    default: 0
+    paramtype: vlogparam
+
+targets:
+  default:
+    filesets:
+      - files_rtl

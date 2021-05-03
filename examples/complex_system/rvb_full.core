@@ -1,0 +1,24 @@
+CAPI=2:
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "riscv:riscv-bitmanip:rvb_full"
+description: "A simple wrapper over all rvb_* cores, that provides all RISC-V bitmanip operations"
+
+filesets:
+  files_rtl:
+    files:
+      - riscv-bitmanip/verilog/rvb_bextdep/rvb_bextdep.v
+      - riscv-bitmanip/verilog/rvb_bitcnt/rvb_bitcnt.v
+      - riscv-bitmanip/verilog/rvb_bmatxor/rvb_bmatxor.v
+      - riscv-bitmanip/verilog/rvb_clmul/rvb_clmul.v
+      - riscv-bitmanip/verilog/rvb_crc/rvb_crc.v
+      - riscv-bitmanip/verilog/rvb_shifter/rvb_shifter.v
+      - riscv-bitmanip/verilog/rvb_simple/rvb_simple.v
+      - riscv-bitmanip/verilog/rvb_full/rvb_full.v
+    file_type: verilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

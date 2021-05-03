@@ -116,7 +116,11 @@ module ibex_cs_registers #(
     input  logic                 mem_store_i,            // store to memory in this cycle
     input  logic                 dside_wait_i,           // core waiting for the dside
     input  logic                 mul_wait_i,             // core waiting for multiply
-    input  logic                 div_wait_i              // core waiting for divide
+    input  logic                 div_wait_i,             // core waiting for divide
+    input  logic                 acc_offload_i,          // instruction offloaded
+    input  logic                 acc_writeback_i,        // offloaded instruction writeback
+    input  logic                 acc_offload_wait_i,     // core waiting to offload instruction
+    input  logic                 acc_writeback_wait_i    // core waiting to resolve wb conflict
 );
 
   import ibex_pkg::*;
@@ -1198,6 +1202,10 @@ module ibex_cs_registers #(
     mhpmcounter_incr[10] = instr_ret_compressed_i; // num of compressed instr
     mhpmcounter_incr[11] = mul_wait_i;             // cycles waiting for multiply
     mhpmcounter_incr[12] = div_wait_i;             // cycles waiting for divide
+    mhpmcounter_incr[13] = acc_offload_i;          // instruction offloaded
+    mhpmcounter_incr[14] = acc_writeback_i;        // offloaded instruction writeback
+    mhpmcounter_incr[15] = acc_offload_wait_i;     // core waiting to offload instruction
+    mhpmcounter_incr[16] = acc_writeback_wait_i;   // core waiting to resolve wb conflict
   end
 
   // event selector (hardwired, 0 means no event)

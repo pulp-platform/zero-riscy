@@ -8,25 +8,29 @@
 
 class core_ibex_vseq extends uvm_sequence;
 
-  ibex_mem_intf_response_seq                       instr_intf_seq;
-  ibex_mem_intf_response_seq                       data_intf_seq;
-  mem_model_pkg::mem_model                      mem;
-  irq_raise_seq                                 irq_raise_seq_h;
-  irq_raise_single_seq                          irq_raise_single_seq_h;
-  irq_raise_nmi_seq                             irq_raise_nmi_seq_h;
-  irq_drop_seq                                  irq_drop_seq_h;
-  debug_seq                                     debug_seq_stress_h;
-  debug_seq                                     debug_seq_single_h;
-  core_ibex_env_cfg                             cfg;
-  bit[ibex_mem_intf_agent_pkg::DATA_WIDTH-1:0]  data;
+  ibex_mem_intf_response_seq                   instr_intf_seq;
+  ibex_mem_intf_response_seq                   data_intf_seq;
+  rei_x_intf_response_seq                      rei_x_if_response_seq;
+  rei_x_intf_ack_seq                           rei_x_if_ack_seq;
+  mem_model_pkg::mem_model                     mem;
+  irq_raise_seq                                irq_raise_seq_h;
+  irq_raise_single_seq                         irq_raise_single_seq_h;
+  irq_raise_nmi_seq                            irq_raise_nmi_seq_h;
+  irq_drop_seq                                 irq_drop_seq_h;
+  debug_seq                                    debug_seq_stress_h;
+  debug_seq                                    debug_seq_single_h;
+  core_ibex_env_cfg                            cfg;
+  bit[ibex_mem_intf_agent_pkg::DATA_WIDTH-1:0] data;
 
   `uvm_object_utils(core_ibex_vseq)
   `uvm_declare_p_sequencer(core_ibex_vseqr)
   `uvm_object_new
 
   virtual task body();
-    instr_intf_seq = ibex_mem_intf_response_seq::type_id::create("instr_intf_seq");
-    data_intf_seq  = ibex_mem_intf_response_seq::type_id::create("data_intf_seq");
+    instr_intf_seq            = ibex_mem_intf_response_seq::type_id::create("instr_intf_seq");
+    data_intf_seq             = ibex_mem_intf_response_seq::type_id::create("data_intf_seq");
+    rei_x_if_response_seq   = rei_x_intf_response_seq::type_id::create("rei_x_intf_response_seq");
+    rei_x_if_ack_seq        = rei_x_intf_ack_seq::type_id::create("rei_x_intf_ack_seq");
     data_intf_seq.is_dmem_seq = 1'b1;
     if (cfg.enable_irq_single_seq) begin
       irq_raise_single_seq_h = irq_raise_single_seq::type_id::create("irq_single_seq_h");
@@ -72,6 +76,8 @@ class core_ibex_vseq extends uvm_sequence;
     fork
       instr_intf_seq.start(p_sequencer.instr_if_seqr);
       data_intf_seq.start(p_sequencer.data_if_seqr);
+      rei_x_if_response_seq.start(p_sequencer.rei_x_if_response_seqr);
+      rei_x_if_ack_seq.start(p_sequencer.rei_x_if_ack_seqr);
     join_none
   endtask
 

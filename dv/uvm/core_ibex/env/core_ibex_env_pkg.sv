@@ -10,6 +10,7 @@ package core_ibex_env_pkg;
 
   import uvm_pkg::*;
   import ibex_mem_intf_agent_pkg::*;
+  import rei_x_intf_agent_pkg::*;
   import irq_agent_pkg::*;
 
   `include "core_ibex_vseqr.sv"

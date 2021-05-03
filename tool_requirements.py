@@ -5,7 +5,7 @@
 # Version requirements for various tools. Checked by tooling (e.g. fusesoc),
 # and inserted into the Sphinx-generated documentation.
 __TOOL_REQUIREMENTS__ = {
-    'verilator': '4.028',
+    'verilator': '4.202',
     'edalize':   '0.2.0',
     'vcs': {
         'min_version': '2020.03-SP2',
