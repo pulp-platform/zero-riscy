@@ -1,0 +1,25 @@
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Linter
+    strategy:
+      matrix:
+        config: ['small']
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Test and display fusesoc config for ${{ matrix.config }}
+        id: config_opts
+        run: echo "::set-output name=options::$(./util/ibex_config.py ${{ matrix.config }} fusesoc_opts)"
+      - name: Lint Verilog source files with Verilator for ${{ matrix.config }}
+        uses: librecores/ci-fusesoc-action@master
+        with:
+          command: 'run'
+          core: 'lowrisc:ibex:ibex_core_tracing'
+          target: 'lint'
+          tool: 'verilator'
+          core-arguments: ${{ steps.config_opts.outputs.options }}
+          pre-run-command: pip3 install -r python-requirements.txt
