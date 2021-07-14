@@ -63,12 +63,12 @@
     cmd:
       - "vmap mtiUvm $QUESTA_HOME/questasim/uvm-1.2"
       - "vlog -64
-              -access=rwc
               -f ibex_dv.f
               -sv
               -mfcu -cuname design_cuname
               +define+UVM_REGEX_NO_DPI
               +define+UVM
+              -timescale \"1 ns / 1 ps \"
               -writetoplevels <out>/top.list
               -l <out>/compile.log <cmp_opts>"
   sim:
