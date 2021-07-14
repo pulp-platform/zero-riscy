@@ -1064,10 +1064,7 @@ module ibex_icache import ibex_pkg::*; #(
   `ASSERT_KNOWN(TagHitKnown,     lookup_valid_ic1 & tag_hit_ic1)
   `ASSERT_KNOWN(TagInvalidKnown, lookup_valid_ic1 & tag_invalid_ic1)
 
-  // This is only used for the Yosys-based formal flow. Once we have working bind support, we can
-  // get rid of it.
 `ifdef FORMAL
- `ifdef YOSYS
   // Unfortunately, Yosys doesn't support passing unpacked arrays as ports. Explicitly pack up the
   // signals we need.
   logic [NUM_FB-1:0][ADDR_W-1:0] packed_fill_addr_q;
@@ -1076,9 +1073,6 @@ module ibex_icache import ibex_pkg::*; #(
       packed_fill_addr_q[i][ADDR_W-1:0] = fill_addr_q[i];
     end
   end
-
-  `include "formal_tb_frag.svh"
- `endif
 `endif
 
 

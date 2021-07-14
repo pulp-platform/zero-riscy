@@ -33,6 +33,9 @@ scripts:
       - --define-if=prim:SYNTHESIS
       - -DYOSYS
       - -DFORMAL
+        # Don't try to convert files called FOO_bind.sv. This allows top-level
+        # formal testbenches that work by being bound into the DUT.
+      - --passthru=.*_bind.sv
       - -v
       - files.txt
 

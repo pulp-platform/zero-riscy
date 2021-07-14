@@ -14,7 +14,7 @@ filesets:
       - lowrisc:util:sv2v
     files:
       - run.sby.j2 : {file_type: sbyConfigTemplate}
-      - formal_tb_frag.svh : {file_type: systemVerilogSource, is_include_file: true}
+      - formal_bind.sv : {file_type: systemVerilogSource}
       - formal_tb.sv : {file_type: systemVerilogSource}
 
 parameters:

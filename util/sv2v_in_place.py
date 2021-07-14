@@ -124,6 +124,9 @@ def main() -> int:
                         help=('Specify a file containing a list of include '
                               'directories (which are appended to any defined '
                               'through the --incdir argument).'))
+    parser.add_argument('--passthru', action='append', default=[],
+                        help=('Specify regular expressions for files that '
+                              'should be left unchanged.'))
     parser.add_argument('--sv2v',
                         default='sv2v',
                         help=("Specify the name or path of the sv2v binary. "
@@ -133,6 +136,15 @@ def main() -> int:
 
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
+
+    passthru_regexes = []
+    for x in args.passthru:
+        try:
+            passthru_regexes.append(re.compile(x))
+        except re.error as err:
+            logging.error('Invalid regular expression {!r}: {}.'
+                          .format(x, err))
+            return 1
 
     try:
         logging.info('Reading file list from {!r}.'.format(args.file_list))
@@ -160,7 +172,13 @@ def main() -> int:
     pkg_paths = []
     for path in paths:
         if os.path.splitext(path)[1] == '.sv':
-            sv_paths.append(path)
+            should_skip = False
+            for regex in passthru_regexes:
+                if regex.match(path):
+                    should_skip = True
+                    break
+            if not should_skip:
+                sv_paths.append(path)
         if os.path.splitext(path)[1] == '.svh':
             svh_paths.append(path)
         if path.endswith('pkg.sv'):
