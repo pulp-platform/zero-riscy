@@ -294,6 +294,12 @@ module ibex_cs_registers #(
     illegal_csr   = 1'b0;
 
     unique case (csr_addr_i)
+      // mvendorid: encoding of manufacturer/provider
+      CSR_MVENDORID: csr_rdata_int = CSR_MVENDORID_VALUE;
+      // marchid: encoding of base microarchitecture
+      CSR_MARCHID: csr_rdata_int = CSR_MARCHID_VALUE;
+      // mimpid: encoding of processor implementation version
+      CSR_MIMPID: csr_rdata_int = CSR_MIMPID_VALUE;
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
